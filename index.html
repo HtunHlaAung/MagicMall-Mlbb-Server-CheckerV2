@@ -260,5 +260,46 @@
       }
     </style>
   </footer>
+  <!-- 🔽 Add this just before </body> -->
+
+<!-- POPUP -->
+<div id="popupOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,20,30,0.85); align-items:center; justify-content:center; z-index:9999;">
+  <div style="background:#1e2a38; padding:30px 25px; border-radius:15px; text-align:center; color:#fff; max-width:350px; width:90%; position:relative; box-shadow:0 0 20px #00c6ff70; animation:popupZoom 0.5s ease;">
+    <span onclick="closePopup()" style="position:absolute; top:10px; right:15px; font-size:18px; color:#fff; cursor:pointer;">✖</span>
+    <img src="logo.svg" alt="Logo" style="width:70px; height:70px; border-radius:12px; background:white; padding:5px; margin-bottom:15px;">
+    <h3>📢 Please Join Our Telegram Channel!</h3>
+    <p>အဆင်ပြေရင် Channelလေး joinချင်းဖြင့်ကူညီနိုင်ပါတယ်ရှင့်။</p>
+    <a href="https://t.me/Magic_Mall_Game_Shop" target="_blank">
+      <button style="margin-top:15px; padding:12px 25px; background:linear-gradient(to right, #0072ff, #00c6ff); color:#fff; font-size:16px; font-weight:bold; border:none; border-radius:10px; cursor:pointer;">👉 Join Now</button>
+    </a>
+  </div>
+</div>
+
+<!-- POPUP ANIMATION STYLE -->
+<style>
+  @keyframes popupZoom {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+</style>
+
+<!-- POPUP SCRIPT -->
+<script>
+  function showPopup() {
+    document.getElementById("popupOverlay").style.display = "flex";
+  }
+
+  function closePopup() {
+    document.getElementById("popupOverlay").style.display = "none";
+    sessionStorage.setItem("hasSeenPopup", "true");
+  }
+
+  window.addEventListener("load", () => {
+    const hasSeenPopup = sessionStorage.getItem("hasSeenPopup");
+    if (!hasSeenPopup) {
+      setTimeout(showPopup, 3000); // Show after 3 seconds
+    }
+  });
+</script>
 </body>
 </html>
