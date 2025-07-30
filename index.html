@@ -143,20 +143,31 @@
       content: "🌑";
     }
 
-    .copy-button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: #555;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-    }
+/* Copy button colors */
+.copy-btn {
+  background: #eee;
+  color: #000;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 13px;
+  transition: background 0.3s, color 0.3s;
+}
 
-    .copy-button:hover {
-      background: #444;
-    }
+[data-theme="dark"] .copy-btn {
+  background: #333;
+  color: #fff;
+}
+
+body[data-theme="light"] #historyList {
+  color: #444;
+}
+
+body[data-theme="dark"] #historyList {
+  color: #ccc;
+}
   </style>
 </head>
 <body>
@@ -168,6 +179,11 @@
   </div>
 
   <div class="container">
+    <img src="logo.svg" alt="Logo"
+  style="width:70px; height:70px; border-radius:12px; background:white; padding:5px; margin-bottom:15px;"
+  oncontextmenu="return false;" 
+  onmousedown="return false;" 
+  ontouchstart="return false;" />
     <h2 id="titleText">Magic Mall MLBB ID Checker V2</h2>
     <input type="text" id="idInput" placeholder="MLBB ID ထည့်ပါ။">
     <input type="text" id="serverInput" placeholder="Server ID ထည့်ပါ။">
@@ -175,93 +191,117 @@
 
     <div id="loading"><div class="spinner"></div></div>
     <div id="result"></div>
+<div id="historyList" style="margin-top:20px; font-size:14px;"></div>
     <button class="copy-button" onclick="copyResult()">📋 Copyကူးမည်</button>
   </div>
 
-  <script>
-    // Theme toggle
-    const toggle = document.getElementById("modeToggle");
-    const root = document.documentElement;
+<script>
+  const toggle = document.getElementById("modeToggle");
+  toggle.addEventListener("change", () => {
+    if (toggle.checked) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  });
 
-    toggle.addEventListener("change", () => {
-      if (toggle.checked) {
-        document.documentElement.setAttribute("data-theme", "dark");
-      } else {
-        document.documentElement.removeAttribute("data-theme");
+  function typeResult(text, element) {
+    element.textContent = "";
+    let i = 0;
+    function typeChar() {
+      if (i < text.length) {
+        element.textContent += text.charAt(i);
+        i++;
+        setTimeout(typeChar, 20);
       }
+    }
+    typeChar();
+  }
+
+  function copyResult() {
+    const text = document.getElementById("result").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      alert("📋 Copyကူးပြီးပါပြီ။");
     });
+  }
 
-    // Typing animation
-    function typeResult(text, element) {
-      element.textContent = "";
-      let i = 0;
-      function typeChar() {
-        if (i < text.length) {
-          element.textContent += text.charAt(i);
-          i++;
-          setTimeout(typeChar, 20);
-        }
-      }
-      typeChar();
+  function saveHistory(id, server) {
+    let history = JSON.parse(localStorage.getItem("mlbbHistory")) || [];
+    const entry = `${id} (${server})`;
+    if (!history.includes(entry)) {
+      history.unshift(entry);
+      if (history.length > 5) history.pop(); // Limit to 5
+      localStorage.setItem("mlbbHistory", JSON.stringify(history));
     }
+    showHistory();
+  }
 
-    // Copy to clipboard
-    function copyResult() {
-      const text = document.getElementById("result").textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        alert("📋 Copyကူးပြီးပါပြီ။");
+  function showHistory() {
+    const history = JSON.parse(localStorage.getItem("mlbbHistory")) || [];
+    const container = document.getElementById("historyList");
+    container.innerHTML = "";
+    if (history.length > 0) {
+      container.innerHTML = "<h4>🔁 History</h4><ul style='text-align:left; padding-left:20px;'>";
+      history.forEach(h => {
+        container.innerHTML += `<li>${h}</li>`;
       });
+      container.innerHTML += "</ul>";
+    }
+  }
+
+  async function checkMLID() {
+    const id = document.getElementById("idInput").value.trim();
+    const server = document.getElementById("serverInput").value.trim();
+    const result = document.getElementById("result");
+    const loading = document.getElementById("loading");
+
+    result.textContent = "";
+    if (!id || !server) {
+      result.textContent = "⚠️ ကျေးဇူးပြု၍ ID နှင့် Server ID နှစ်ခုလုံးထည့်ပါ။";
+      return;
     }
 
-    async function checkMLID() {
-      const id = document.getElementById("idInput").value.trim();
-      const server = document.getElementById("serverInput").value.trim();
-      const result = document.getElementById("result");
-      const loading = document.getElementById("loading");
+    loading.style.display = "block";
 
-      result.textContent = "";
-      if (!id || !server) {
-        result.textContent = "⚠️ ကျေးဇူးပြု၍ ID နှင့် Server ID နှစ်ခုလုံးထည့်ပါ။";
+    try {
+      const response = await fetch(`https://magic-mall-mlbb-id-check-v2.hlaaunghtun68.workers.dev/mobile-legends/${id}/${server}`);
+      const json = await response.json();
+      loading.style.display = "none";
+
+      if (json.error || !json.data) {
+        result.textContent = "❌ အကောင့်မတွေ့ပါ။";
         return;
       }
 
-      loading.style.display = "block";
+      const data = json.data;
+      let message = "✔️ အကောင့်တွေ့ပါပြီ\n\n";
+      message += `✅ အမည်: ${data.username}\n`;
+      message += `🆔 ID: ${data.id}\n`;
+      message += `🖥 Server: ${data.server}\n`;
+      message += `🌏 နိုင်ငံ: ${data.region}\n`;
 
-      try {
-        const response = await fetch(`https://magic-mall-mlbb-id-check-v2.hlaaunghtun68.workers.dev/mobile-legends/${id}/${server}`);
-        const json = await response.json();
-        loading.style.display = "none";
-
-        if (json.error || !json.data) {
-          result.textContent = "❌ အကောင့်မတွေ့ပါ။";
-          return;
-        }
-
-        const data = json.data;
-        let message = "✔️ အကောင့်တွေ့ပါပြီ\n\n";
-        message += `✅ အမည်: ${data.username}\n`;
-        message += `🆔 ID: ${data.id}\n`;
-        message += `🖥 Server: ${data.server}\n`;
-        message += `🌏 နိုင်ငံ: ${data.region}\n`;
-
-        if (data.shop_events && data.shop_events.length > 0) {
-          message += `\n💎 Shop Events\n`;
-          data.shop_events.forEach(event => {
-            message += `\n${event.title}\n`;
-            event.goods.forEach(good => {
-              const status = good.game_can_buy ? "🟢 ရပါသေးတယ်" : "🔴 မရတော့ပါ";
-              message += `${good.title} - ${status}\n`;
-            });
+      if (data.shop_events && data.shop_events.length > 0) {
+        message += `\n💎 Shop Events\n`;
+        data.shop_events.forEach(event => {
+          message += `\n${event.title}\n`;
+          event.goods.forEach(good => {
+            const status = good.game_can_buy ? "🟢 ရပါသေးတယ်" : "🔴 မရတော့ပါ";
+            message += `${good.title} - ${status}\n`;
           });
-        }
-
-        typeResult(message, result);
-      } catch (error) {
-        loading.style.display = "none";
-        result.textContent = "🚫 Server error. ပြန်စမ်းကြည့်ပါ။";
+        });
       }
+
+      typeResult(message, result);
+      saveHistory(id, server);
+    } catch (error) {
+      loading.style.display = "none";
+      result.textContent = "🚫 Server error. ပြန်စမ်းကြည့်ပါ။";
     }
-  </script>
+  }
+
+  // Show history on load
+  window.addEventListener("DOMContentLoaded", showHistory);
+</script>
     <!-- Your footer, popup etc. can remain unchanged below -->
 <footer style="margin-top:60px; padding:30px 20px; background:linear-gradient(135deg, #00c6ff, #0072ff); color:white; text-align:center; border-top-left-radius:20px; border-top-right-radius:20px; box-shadow:0 -8px 25px rgba(0,0,0,0.3); font-family:'Segoe UI', sans-serif; animation:glow 4s infinite alternate;">
     <h3 style="margin-bottom:10px; font-size:22px; letter-spacing:0.5px;">📢 Connect With Us</h3>
