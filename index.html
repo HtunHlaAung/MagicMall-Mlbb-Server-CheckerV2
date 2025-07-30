@@ -283,7 +283,7 @@ body[data-theme="dark"] #historyList {
       if (data.shop_events && data.shop_events.length > 0) {
         message += `\n💎 Shop Events\n`;
         data.shop_events.forEach(event => {
-          message += `\n${event.title}\n`;
+          message += `\n💎${event.title}\n`;
           event.goods.forEach(good => {
             const status = good.game_can_buy ? "🟢 ရပါသေးတယ်" : "🔴 မရတော့ပါ";
             message += `${good.title} - ${status}\n`;
